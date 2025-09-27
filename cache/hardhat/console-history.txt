@@ -1,0 +1,2 @@
+const mgr = await Manager.deploy("<stakingToken>", "<yieldFarmAddress>");
+const Manager = await ethers.getContractFactory("VaultLifecycleManager");

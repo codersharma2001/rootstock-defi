@@ -3,6 +3,8 @@ pragma solidity ^0.8.22;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { OFT } from "@layerzerolabs/oft-evm/contracts/OFT.sol";
+import { SendParam } from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import { MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -176,9 +178,19 @@ contract YieldFarmOFT is OFT {
         userInfo[_poolId][msg.sender].rewards = 0;
         _mint(address(this), reward);
 
-        // Send tokens cross-chain
-        bytes32 to = bytes32(uint256(uint160(msg.sender)));
-        _lzSend(_dstEid, abi.encodePacked(to), reward, _options, payable(msg.sender));
+        // Prepare OFT send parameters
+        SendParam memory sendParam = SendParam({
+            dstEid: _dstEid,
+            to: bytes32(uint256(uint160(msg.sender))),
+            amountLD: reward,
+            minAmountLD: reward,
+            extraOptions: _options,
+            composeMsg: bytes(""),
+            oftCmd: bytes("")
+        });
+
+        MessagingFee memory feeInfo = MessagingFee({ nativeFee: msg.value, lzTokenFee: 0 });
+        this.send{ value: msg.value }(sendParam, feeInfo, msg.sender);
 
         emit RewardsClaimed(msg.sender, _poolId, reward);
         emit CrossChainRewardsSent(msg.sender, _dstEid, reward);

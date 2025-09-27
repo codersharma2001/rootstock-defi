@@ -1,6 +1,6 @@
+import { ethers } from 'ethers'
 import { task } from 'hardhat/config'
 import '@nomiclabs/hardhat-ethers'
-import { utils, Contract } from 'ethers'
 
 const ERC20_META_ABI = [
     'function decimals() view returns (uint8)',
@@ -9,10 +9,10 @@ const ERC20_META_ABI = [
 ]
 
 function toBridgeId(raw: string): string {
-    if (utils.isHexString(raw)) {
-        return utils.hexZeroPad(raw, 32)
+    if (ethers.utils.isHexString(raw)) {
+        return ethers.utils.hexZeroPad(raw, 32)
     }
-    return utils.id(raw)
+    return ethers.utils.id(raw)
 }
 
 task('lz:vault:return', 'Exit a lifecycle-managed farm position and bridge assets home')
@@ -25,11 +25,11 @@ task('lz:vault:return', 'Exit a lifecycle-managed farm position and bridge asset
     .addOptionalParam('recipient', 'Recipient address on destination chain (defaults to signer)')
     .setAction(async (taskArgs, hre) => {
         const provider = hre.ethers.provider
-        const signer = new hre.ethers.Wallet(taskArgs.privatekey, provider)
+        const signer = new ethers.Wallet(taskArgs.privatekey, provider)
         const manager = await hre.ethers.getContractAt('VaultLifecycleManager', taskArgs.manager, signer)
 
         const stakingTokenAddress: string = await manager.stakingToken()
-        const token = new Contract(stakingTokenAddress, ERC20_META_ABI, signer)
+        const token = new ethers.Contract(stakingTokenAddress, ERC20_META_ABI, signer)
         const decimals: number = await token.decimals()
         let symbol = 'TOKEN'
         try {
@@ -51,7 +51,7 @@ task('lz:vault:return', 'Exit a lifecycle-managed farm position and bridge asset
 
         const balanceAfter = await token.balanceOf(signer.address)
         const withdrawn = balanceAfter.sub(balanceBefore)
-        const withdrawnHuman = utils.formatUnits(withdrawn, decimals)
+        const withdrawnHuman = ethers.utils.formatUnits(withdrawn, decimals)
         console.log(`Tokens withdrawn to signer: ${withdrawnHuman} ${symbol}`)
 
         if (withdrawn.isZero()) {

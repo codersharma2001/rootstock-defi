@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
-import { task } from 'hardhat/config'
-import '@nomicfoundation/hardhat-ethers'
 import { parseUnits } from '@ethersproject/units'
+import { task } from 'hardhat/config'
+import '@nomiclabs/hardhat-ethers'
 import {
     createGetHreByEid,
     createProviderFactory,

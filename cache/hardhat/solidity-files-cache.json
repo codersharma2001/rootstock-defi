@@ -1845,6 +1845,204 @@
       "artifacts": [
         "MyOFTMock"
       ]
+    },
+    "/Users/mayanksharma/Desktop/Rootstock_Final/rootstock-project/contracts/CrossChainVault.sol": {
+      "lastModificationDate": 1759005886064,
+      "contentHash": "beacf8d017d017c4b387b173553f7f9d",
+      "sourceName": "contracts/CrossChainVault.sol",
+      "solcConfig": {
+        "version": "0.8.22",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.22"
+      ],
+      "artifacts": [
+        "CrossChainVault"
+      ]
+    },
+    "/Users/mayanksharma/Desktop/Rootstock_Final/rootstock-project/contracts/YieldFarmOFT.sol": {
+      "lastModificationDate": 1759006567141,
+      "contentHash": "c7993765fc27cbef60776ef992db80e5",
+      "sourceName": "contracts/YieldFarmOFT.sol",
+      "solcConfig": {
+        "version": "0.8.22",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@layerzerolabs/oft-evm/contracts/OFT.sol",
+        "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.22"
+      ],
+      "artifacts": [
+        "YieldFarmOFT"
+      ]
+    },
+    "/Users/mayanksharma/Desktop/Rootstock_Final/rootstock-project/contracts/RewardsDistributor.sol": {
+      "lastModificationDate": 1759006604968,
+      "contentHash": "995114f8fa6bea6665a580dd8e5c1f4d",
+      "sourceName": "contracts/RewardsDistributor.sol",
+      "solcConfig": {
+        "version": "0.8.22",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol",
+        "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.22"
+      ],
+      "artifacts": [
+        "RewardsDistributor"
+      ]
+    },
+    "/Users/mayanksharma/Desktop/Rootstock_Final/rootstock-project/contracts/VaultLifecycleManager.sol": {
+      "lastModificationDate": 1759005463075,
+      "contentHash": "d9ae2fdbd1316a4fe0b62fc2e098d416",
+      "sourceName": "contracts/VaultLifecycleManager.sol",
+      "solcConfig": {
+        "version": "0.8.22",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.22"
+      ],
+      "artifacts": [
+        "IYieldFarm",
+        "VaultLifecycleManager"
+      ]
     }
   }
 }

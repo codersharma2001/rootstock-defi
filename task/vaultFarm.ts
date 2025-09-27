@@ -1,6 +1,6 @@
+import { ethers } from 'ethers'
 import { task, types } from 'hardhat/config'
 import '@nomiclabs/hardhat-ethers'
-import { utils, Contract } from 'ethers'
 
 const ERC20_ABI = [
     'function decimals() view returns (uint8)',
@@ -10,10 +10,10 @@ const ERC20_ABI = [
 ]
 
 function toBridgeId(raw: string): string {
-    if (utils.isHexString(raw)) {
-        return utils.hexZeroPad(raw, 32)
+    if (ethers.utils.isHexString(raw)) {
+        return ethers.utils.hexZeroPad(raw, 32)
     }
-    return utils.id(raw)
+    return ethers.utils.id(raw)
 }
 
 task('lz:vault:farm', 'Stake bridged assets into a yield farm via VaultLifecycleManager')
@@ -27,13 +27,13 @@ task('lz:vault:farm', 'Stake bridged assets into a yield farm via VaultLifecycle
     .setAction(async (taskArgs, hre) => {
         const provider = hre.ethers.provider
         const signer = taskArgs.privatekey
-            ? new hre.ethers.Wallet(taskArgs.privatekey, provider)
+            ? new ethers.Wallet(taskArgs.privatekey, provider)
             : (await hre.ethers.getSigners())[0]
 
         const manager = await hre.ethers.getContractAt('VaultLifecycleManager', taskArgs.manager, signer)
         const stakingTokenAddress: string = taskArgs.token ?? (await manager.stakingToken())
 
-        const token = new Contract(stakingTokenAddress, ERC20_ABI, signer)
+        const token = new ethers.Contract(stakingTokenAddress, ERC20_ABI, signer)
         const decimals: number = await token.decimals()
         let symbol = 'TOKEN'
         try {
@@ -42,7 +42,7 @@ task('lz:vault:farm', 'Stake bridged assets into a yield farm via VaultLifecycle
             // symbol optional
         }
 
-        const amount = utils.parseUnits(taskArgs.amount, decimals)
+        const amount = ethers.utils.parseUnits(taskArgs.amount, decimals)
         const allowance = await token.allowance(signer.address, taskArgs.manager)
         if (allowance.lt(amount)) {
             if (!allowance.isZero()) {
