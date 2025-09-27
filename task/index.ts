@@ -1,3 +1,5 @@
-import './sendOFT'
-import './mintOFT'
-
+import "./sendOFT";
+import "./mintOFT";
+import "./stakeTokens";
+import "./claimRewards";
+import "./vaultOperations";
