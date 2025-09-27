@@ -5,7 +5,6 @@ interface TaskArgs {
   contract: string;
   poolId: string;
   amount: string;
-  network: string;
   privatekey?: string;
 }
 
@@ -13,16 +12,13 @@ task("lz:stake", "Stake tokens in a yield farming pool")
   .addParam("contract", "YieldFarmOFT contract address")
   .addParam("poolId", "Pool ID to stake in")
   .addParam("amount", "Amount to stake (in tokens, not wei)")
-  .addParam("network", "Network name")
   .addOptionalParam("privatekey", "Private key of the account to stake from")
   .setAction(async (taskArgs: TaskArgs, hre: HardhatRuntimeEnvironment) => {
-    const { contract, poolId, amount, network, privatekey } = taskArgs;
+    const { contract, poolId, amount, privatekey } = taskArgs;
+    const network = hre.network.name;
 
     console.log(`Staking ${amount} tokens in pool ${poolId} on ${network}`);
     console.log(`Contract address: ${contract}`);
-
-    // Switch to the specified network
-    hre.changeNetwork(network);
 
     let signer;
     if (privatekey) {

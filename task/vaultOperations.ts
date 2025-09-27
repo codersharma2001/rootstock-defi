@@ -5,7 +5,6 @@ interface DepositArgs {
   contract: string;
   vaultId: string;
   amount: string;
-  network: string;
   privatekey?: string;
 }
 
@@ -13,14 +12,12 @@ interface WithdrawArgs {
   contract: string;
   vaultId: string;
   shares: string;
-  network: string;
   privatekey?: string;
 }
 
 interface VaultInfoArgs {
   contract: string;
   vaultId: string;
-  network: string;
   user?: string;
 }
 
@@ -29,17 +26,15 @@ task("lz:vault:deposit", "Deposit tokens into a cross-chain vault")
   .addParam("contract", "CrossChainVault contract address")
   .addParam("vaultId", "Vault ID to deposit into")
   .addParam("amount", "Amount to deposit (in tokens, not wei)")
-  .addParam("network", "Network name")
   .addOptionalParam("privatekey", "Private key of the account to deposit from")
   .setAction(async (taskArgs: DepositArgs, hre: HardhatRuntimeEnvironment) => {
-    const { contract, vaultId, amount, network, privatekey } = taskArgs;
+    const { contract, vaultId, amount, privatekey } = taskArgs;
+    const network = hre.network.name;
 
     console.log(
       `Depositing ${amount} tokens into vault ${vaultId} on ${network}`
     );
     console.log(`Contract address: ${contract}`);
-
-    hre.changeNetwork(network);
 
     let signer;
     if (privatekey) {
@@ -119,17 +114,15 @@ task("lz:vault:withdraw", "Withdraw tokens from a cross-chain vault")
   .addParam("contract", "CrossChainVault contract address")
   .addParam("vaultId", "Vault ID to withdraw from")
   .addParam("shares", "Shares to redeem (in tokens, not wei)")
-  .addParam("network", "Network name")
   .addOptionalParam("privatekey", "Private key of the account to withdraw to")
   .setAction(async (taskArgs: WithdrawArgs, hre: HardhatRuntimeEnvironment) => {
-    const { contract, vaultId, shares, network, privatekey } = taskArgs;
+    const { contract, vaultId, shares, privatekey } = taskArgs;
+    const network = hre.network.name;
 
     console.log(
       `Withdrawing ${shares} shares from vault ${vaultId} on ${network}`
     );
     console.log(`Contract address: ${contract}`);
-
-    hre.changeNetwork(network);
 
     let signer;
     if (privatekey) {
@@ -195,16 +188,14 @@ task("lz:vault:withdraw", "Withdraw tokens from a cross-chain vault")
 task("lz:vault:info", "Get vault information")
   .addParam("contract", "CrossChainVault contract address")
   .addParam("vaultId", "Vault ID to get info for")
-  .addParam("network", "Network name")
   .addOptionalParam("user", "User address to get specific user info")
   .setAction(
     async (taskArgs: VaultInfoArgs, hre: HardhatRuntimeEnvironment) => {
-      const { contract, vaultId, network, user } = taskArgs;
+      const { contract, vaultId, user } = taskArgs;
+      const network = hre.network.name;
 
       console.log(`Getting vault ${vaultId} info on ${network}`);
       console.log(`Contract address: ${contract}`);
-
-      hre.changeNetwork(network);
 
       const vault = await hre.ethers.getContractAt("CrossChainVault", contract);
 
@@ -262,17 +253,15 @@ task("lz:vault:info", "Get vault information")
 task("lz:vault:claim-yield", "Claim yield from a vault")
   .addParam("contract", "CrossChainVault contract address")
   .addParam("vaultId", "Vault ID to claim yield from")
-  .addParam("network", "Network name")
   .addOptionalParam(
     "privatekey",
     "Private key of the account to claim yield for"
   )
   .setAction(async (taskArgs: DepositArgs, hre: HardhatRuntimeEnvironment) => {
-    const { contract, vaultId, network, privatekey } = taskArgs;
+    const { contract, vaultId, privatekey } = taskArgs;
+    const network = hre.network.name;
 
     console.log(`Claiming yield from vault ${vaultId} on ${network}`);
-
-    hre.changeNetwork(network);
 
     let signer;
     if (privatekey) {

@@ -4,9 +4,8 @@ pragma solidity ^0.8.22;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { OAppReceiver } from "@layerzerolabs/oapp-evm/contracts/oapp/OAppReceiver.sol";
-import { OAppSender } from "@layerzerolabs/oapp-evm/contracts/oapp/OAppSender.sol";
 import { OApp } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
+import { Origin } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
 /**
  * @title CrossChainVault
@@ -87,34 +86,34 @@ contract CrossChainVault is OApp {
      * @param _vaultId Vault ID to deposit into
      * @param _amount Amount to deposit
      */
-    function deposit(uint256 _vaultId, uint256 _amount) external {
+    function deposit(uint256 _vaultId, uint256 _amount) external returns (uint256 sharesMinted) {
         require(_vaultId < vaultCount, "Vault does not exist");
         require(vaults[_vaultId].active, "Vault not active");
         require(_amount > 0, "Amount must be positive");
 
         VaultInfo storage vault = vaults[_vaultId];
-        
+
         // Calculate shares to mint
-        uint256 shares;
         if (vault.totalShares == 0) {
-            shares = _amount;
+            sharesMinted = _amount;
         } else {
-            shares = (_amount * vault.totalShares) / vault.totalDeposits;
+            sharesMinted = (_amount * vault.totalShares) / vault.totalDeposits;
         }
 
         // Update vault and user info
         vault.asset.safeTransferFrom(msg.sender, address(this), _amount);
         vault.totalDeposits += _amount;
-        vault.totalShares += shares;
+        vault.totalShares += sharesMinted;
 
         UserDeposit storage userDeposit = userDeposits[_vaultId][msg.sender];
-        userDeposit.shares += shares;
+        userDeposit.shares += sharesMinted;
         if (userDeposit.depositTime == 0) {
             userDeposit.depositTime = block.timestamp;
             userDeposit.lastClaimTime = block.timestamp;
         }
 
-        emit Deposited(msg.sender, _vaultId, _amount, shares);
+        emit Deposited(msg.sender, _vaultId, _amount, sharesMinted);
+        return sharesMinted;
     }
 
     /**
@@ -122,7 +121,7 @@ contract CrossChainVault is OApp {
      * @param _vaultId Vault ID to withdraw from
      * @param _shares Amount of shares to redeem
      */
-    function withdraw(uint256 _vaultId, uint256 _shares) external {
+    function withdraw(uint256 _vaultId, uint256 _shares) external returns (uint256 amountWithdrawn) {
         require(_vaultId < vaultCount, "Vault does not exist");
         require(_shares > 0, "Shares must be positive");
 
@@ -132,16 +131,17 @@ contract CrossChainVault is OApp {
         VaultInfo storage vault = vaults[_vaultId];
         
         // Calculate amount to withdraw
-        uint256 amount = (_shares * vault.totalDeposits) / vault.totalShares;
+        amountWithdrawn = (_shares * vault.totalDeposits) / vault.totalShares;
 
         // Update vault and user info
-        vault.totalDeposits -= amount;
+        vault.totalDeposits -= amountWithdrawn;
         vault.totalShares -= _shares;
         userDeposit.shares -= _shares;
 
-        vault.asset.safeTransfer(msg.sender, amount);
+        vault.asset.safeTransfer(msg.sender, amountWithdrawn);
 
-        emit Withdrawn(msg.sender, _vaultId, _shares, amount);
+        emit Withdrawn(msg.sender, _vaultId, _shares, amountWithdrawn);
+        return amountWithdrawn;
     }
 
     /**

@@ -1,10 +1,9 @@
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface TaskArgs {
   contract: string;
   poolId: string;
-  network: string;
   privatekey?: string;
   crosschain?: boolean;
   destination?: string;
@@ -13,7 +12,6 @@ interface TaskArgs {
 task("lz:claim", "Claim rewards from a yield farming pool")
   .addParam("contract", "YieldFarmOFT contract address")
   .addParam("poolId", "Pool ID to claim rewards from")
-  .addParam("network", "Network name")
   .addOptionalParam(
     "privatekey",
     "Private key of the account to claim rewards for"
@@ -22,24 +20,22 @@ task("lz:claim", "Claim rewards from a yield farming pool")
     "crosschain",
     "Whether to send rewards cross-chain (true/false)",
     false,
-    "boolean"
+    types.boolean
   )
   .addOptionalParam(
     "destination",
     "Destination network for cross-chain rewards"
   )
   .setAction(async (taskArgs: TaskArgs, hre: HardhatRuntimeEnvironment) => {
-    const { contract, poolId, network, privatekey, crosschain, destination } =
+    const { contract, poolId, privatekey, crosschain, destination } =
       taskArgs;
+    const network = hre.network.name;
 
     console.log(`Claiming rewards from pool ${poolId} on ${network}`);
     if (crosschain && destination) {
       console.log(`Will send rewards to ${destination}`);
     }
     console.log(`Contract address: ${contract}`);
-
-    // Switch to the specified network
-    hre.changeNetwork(network);
 
     let signer;
     if (privatekey) {
@@ -84,7 +80,7 @@ task("lz:claim", "Claim rewards from a yield farming pool")
 
       if (crosschain && destination) {
         // Cross-chain claim
-        const networkEndpoints = {
+        const networkEndpoints: Record<string, number> = {
           "sepolia-testnet": 40161,
           "rootstock-testnet": 40230,
         };

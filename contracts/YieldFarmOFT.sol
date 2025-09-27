@@ -13,7 +13,6 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
  */
 contract YieldFarmOFT is OFT {
     using SafeERC20 for IERC20;
-
     // Staking pool structure
     struct StakingPool {
         IERC20 stakingToken;

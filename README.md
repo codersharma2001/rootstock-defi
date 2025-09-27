@@ -225,6 +225,34 @@ Note: This task requires using a contract with a mint function (e.g., `MyOFTMock
 
 After minting tokens, you can send them between networks using the LayerZero protocol. The `lz:oft:send` task allows you to transfer tokens from one chain to another seamlessly.
 
+### Farming Bridged Liquidity
+
+Once assets arrive on the destination chain, manage their lifecycle with the new helper tasks:
+
+```shell
+# Stake bridged assets into the configured yield farm
+npx hardhat lz:vault:farm \
+  --network sepolia-testnet \
+  --manager 0xLifecycleManager \
+  --bridge <bridge_tx_hash_or_label> \
+  --poolid 0 \
+  --amount 5 \
+  --autocompound true \
+  --privatekey $PRIVATE_KEY
+
+# Exit the position and bridge funds + rewards back home
+npx hardhat lz:vault:return \
+  --network sepolia-testnet \
+  --manager 0xLifecycleManager \
+  --bridge <bridge_tx_hash_or_label> \
+  --percent 100 \
+  --oft 0xYourOFTAddress \
+  --destination rootstock-testnet \
+  --privatekey $PRIVATE_KEY
+```
+
+Use the bridge transaction hash (or any unique label) as the `--bridge` identifier to tie together the bridge, farm, and return steps.
+
 ### Sending Tokens from Source to Destination Chain
 
 ```shell
