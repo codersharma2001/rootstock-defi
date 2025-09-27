@@ -200,6 +200,23 @@ npx hardhat lz:oft:mint \
   --private-key $PRIVATE_KEY
 ```
 
+## Cross-chain Transfer Task
+
+The `lz:oft:send` task now configures the trusted remote peer automatically before attempting a transfer. Provide the destination contract explicitly with `--remote` if it differs from the deployment artifacts on disk:
+
+```shell
+npx hardhat lz:oft:send \
+  --contract <SOURCE_CONTRACT_ADDRESS> \
+  --recipient <RECIPIENT_ADDRESS> \
+  --source rootstock-testnet \
+  --destination sepolia-testnet \
+  --amount 1 \
+  --privatekey $PRIVATE_KEY \
+  --remote <DESTINATION_CONTRACT_ADDRESS>
+```
+
+If `deployments/<destination>/MyOFT.json` exists the task will reuse that address, so the `--remote` flag is optional in that case.
+
 If no recipient is specified, tokens will be minted to the address associated with the provided private key.
 
 Note: This task requires using a contract with a mint function (e.g., `MyOFTMock`). The standard `MyOFT` contract doesn't have this function.

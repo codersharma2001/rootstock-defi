@@ -1,20 +1,24 @@
+import { hexZeroPad } from '@ethersproject/bytes'
+import { parseUnits } from '@ethersproject/units'
+import { existsSync, readFileSync } from 'fs'
 import { ethers } from 'ethers'
 import { task } from 'hardhat/config'
 import '@nomiclabs/hardhat-ethers'
-import { parseUnits } from '@ethersproject/units'
-import { hexZeroPad } from '@ethersproject/bytes'
 import {
     createGetHreByEid,
     createProviderFactory,
     getEidForNetworkName
 } from '@layerzerolabs/devtools-evm-hardhat'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
+import path from 'path'
 
 // ABI for the OFT contract's send function
 const OFT_ABI = [
     "function decimals() view returns (uint8)",
     "function quoteSend(tuple(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd), bool payInLzToken) view returns (tuple(uint256 nativeFee, uint256 lzTokenFee))",
-    "function send(tuple(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd), tuple(uint256 nativeFee, uint256 lzTokenFee), address refundAddress) payable returns (tuple(bytes32 guid, uint64 nonce, uint256 fee), tuple(uint256 amountSentLD, uint256 amountReceivedLD))"
+    "function send(tuple(uint32 dstEid, bytes32 to, uint256 amountLD, uint256 minAmountLD, bytes extraOptions, bytes composeMsg, bytes oftCmd), tuple(uint256 nativeFee, uint256 lzTokenFee), address refundAddress) payable returns (tuple(bytes32 guid, uint64 nonce, uint256 fee), tuple(uint256 amountSentLD, uint256 amountReceivedLD))",
+    "function setPeer(uint32 eid, bytes32 peer) external",
+    "function peers(uint32 eid) view returns (bytes32)"
 ];
 
 // Helper to handle error messages
@@ -37,6 +41,23 @@ function getErrorMessage(error: unknown): string {
     return String(error);
 }
 
+function loadDeploymentAddress(network: string, contractName: string): string | null {
+    const deploymentPath = path.join(process.cwd(), 'deployments', network, `${contractName}.json`)
+
+    if (!existsSync(deploymentPath)) {
+        return null
+    }
+
+    try {
+        const fileContents = readFileSync(deploymentPath, 'utf8')
+        const parsed = JSON.parse(fileContents) as { address?: string }
+        return parsed.address ?? null
+    } catch (error) {
+        console.warn(`Unable to read deployment file at ${deploymentPath}: ${getErrorMessage(error)}`)
+        return null
+    }
+}
+
 task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
     .addParam('contract', 'Contract address on source network')
     .addParam('recipient', 'Recipient address on destination network')
@@ -44,6 +65,8 @@ task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
     .addParam('destination', 'Name of the destination network')
     .addParam('amount', 'Amount to transfer in token decimals')
     .addParam('privatekey', 'Private key of the sender')
+    .addOptionalParam('remote', 'Contract address on destination network (defaults to deployments data if available)')
+    .addOptionalParam('contractname', 'Contract name to look up in deployments for the destination network', 'MyOFT')
     .setAction(async (taskArgs, hre) => {
         try {
             // Get endpoint IDs for source and destination networks
@@ -68,6 +91,43 @@ task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
             
             // Create contract instance directly without using contract factory
             const oftContract = new ethers.Contract(contractAddress, OFT_ABI, wallet);
+
+            // Resolve the destination contract address for configuring trusted peers
+            const destinationContractAddress = (() => {
+                if (taskArgs.remote) {
+                    return ethers.utils.getAddress(taskArgs.remote);
+                }
+
+                const contractName = taskArgs.contractname as string;
+                const deploymentAddress = loadDeploymentAddress(taskArgs.destination, contractName);
+
+                if (deploymentAddress) {
+                    return ethers.utils.getAddress(deploymentAddress);
+                }
+
+                return null;
+            })();
+
+            if (!destinationContractAddress) {
+                throw new Error(
+                    'Unable to determine destination contract address. Provide one with --remote or ensure deployments/<destination>/<contractName>.json exists.'
+                );
+            }
+
+            console.log(`Destination contract: ${destinationContractAddress}`);
+
+            const destinationPeerBytes32 = hexZeroPad(destinationContractAddress, 32);
+            const currentPeer = (await oftContract.peers(eidB)) as string;
+
+            if (currentPeer.toLowerCase() !== destinationPeerBytes32.toLowerCase()) {
+                console.log('Trusted peer not set for destination. Setting peer before attempting transfer...');
+                const peerTx = await oftContract.setPeer(eidB, destinationPeerBytes32);
+                console.log(`Peer configuration transaction hash: ${peerTx.hash}`);
+                await peerTx.wait();
+                console.log('Destination peer configured successfully.');
+            } else {
+                console.log('Destination peer already configured.');
+            }
             
             // Get token decimals and parse amount
             const decimals = await oftContract.decimals();
@@ -133,5 +193,4 @@ task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
             return null;
         }
     });
-
 
