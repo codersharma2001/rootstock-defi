@@ -1,312 +1,235 @@
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rsksmart/rsk-layerzero-xerc20/badge)](https://scorecard.dev/viewer/?uri=github.com/rsksmart/rsk-layerzero-xerc20)
-[![CodeQL](https://github.com/rsksmart/rsk-layerzero-xerc20/workflows/CodeQL/badge.svg)](https://github.com/rsksmart/rsk-layerzero-xerc20/actions?query=workflow%3ACodeQL)
+# Rootstock LayerZero Yield Vault
 
-<p align="center">
-  <a href="https://layerzero.network">
-    <img alt="LayerZero" style="width: auto" src="images/L0.png"/>
-  </a>
-</p>
+This project turns the original LayerZero OFT sample into a full cross-chain yield loop. You can mint an omnichain token on Rootstock, bridge it to Sepolia, stake it in a local farm, harvest the rewards, and bridge everything back to the origin chain using a single set of Hardhat tasks.
 
-<h1 align="center">Omnichain Fungible Token xERC20</h1>
+---
 
-## Introduction
+## High-level Architecture
 
-This guide demonstrates implementing cross-chain token transfers using **OFT** (Omnichain Fungible Token) between **Rootstock Testnet** and **Ethereum Sepolia Testnet** via **LayerZero's OFT V2 protocol**.
+- **MyOFT.sol** (Rootstock & Sepolia) – the omnichain fungible token used as the staking asset. Both networks reuse the same address after deployment.
+- **YieldFarmOFT.sol** (Sepolia) – a simple staking contract that mints rewards and understands LayerZero sends.
+- **VaultLifecycleManager.sol** (Sepolia) – records bridge IDs, stakes bridged balances into the farm, optionally auto-compounds rewards, and exits positions on demand.
+- **CrossChainVault.sol / RewardsDistributor.sol** – upgraded to LayerZero V2 (new `MessagingFee` struct) so on-chain messages work with the latest endpoints.
+- **Hardhat tasks** – a CLI workflow (`lz:oft:mint`, `lz:oft:send`, `lz:vault:farm`, `lz:vault:return`) that wires all the above together.
 
-You'll learn to:
-- Set up Hardhat for cross-chain deployments
-- Deploy an OFT contract for token transfers between chains
-- Configure LayerZero endpoints for cross-chain communication
-- Execute transfers between Rootstock and Ethereum Sepolia testnets
+We stay on **Hardhat + ethers v5** because LayerZero’s dev tooling depends on it. Every script and test now imports `@nomiclabs/hardhat-ethers` and uses `ethers.utils.*` helpers.
 
-## Prerequisites
+---
 
-To complete this guide, you'll need:
+## Requirements
 
-- **Node.js**: v18.18.0+ ([Download Node.js](https://nodejs.org/en/download) or use [NVM](https://github.com/nvm-sh/nvm) to manage Node versions)
-- **Code Editor**: Any editor of your choice
-- **RPC Providers**: 
-  - [Alchemy](https://www.alchemy.com/) or [Infura](https://infura.io/) for Ethereum Sepolia
-  - [Rootstock RPC](https://rpc.rootstock.io/) for Rootstock Testnet
-- **Metamask**: [Install](https://metamask.io/) and connect to [Ethereum Sepolia](https://chainlist.org/chain/11155111) and [Rootstock Testnet](https://chainlist.org/chain/31)
-- **Test Funds**: [Sepolia ETH](https://sepoliafaucet.com/) and [Rootstock RBTC](https://faucet.rootstock.io/)
+- Node.js ≥ 18.18
+- pnpm/npm/yarn (examples below use `npm`)
+- Rootstock testnet RBTC & Sepolia ETH for gas
+- RPC URLs (set in `.env`):
+  - `RPC_URL_ROOTSTOCK_TESTNET`
+  - `RPC_URL_SEPOLIA`
+- A deployer key with funds on both networks (`PRIVATE_KEY` in `.env`)
 
-> **Important**: Ensure you have sufficient test tokens on both networks.
-
-## Project Setup
-
-### 1. Clone LayerZero Project Repo
-
-Clone the repository:
-
-```zsh
-git clone https://github.com/rsksmart/rsk-layerzero-xERC20.git
-```
-
-### 2. Setup environment variables
-
-Rename the `.env.example` file to `.env` and update the environment variables with your own values.
-
-
-```markdown
-# By default, the examples support both mnemonic-based and private key-based authentication
-# You don't need to set both of these values, just pick the one that you prefer and set that one
-MNEMONIC=
-PRIVATE_KEY=
-```
-
-### 3. Configure chains 
-
-Once the project is created, go to `hardhat.config.ts` and configure the chains you want to deploy to.
-
-> **Note**: For better performance and reliability, use a custom RPC endpoint as suggested in the prerequisites section.
-
-```typescript
-networks: {
-    'sepolia-testnet': {
-        eid: EndpointId.SEPOLIA_V2_TESTNET,
-        url: process.env.RPC_URL_SEPOLIA || 'https://ethereum-sepolia-rpc.publicnode.com',
-        accounts,
-    },
-    'rootstock-testnet': {
-        eid: EndpointId.ROOTSTOCK_V2_TESTNET,
-        url: process.env.RPC_URL_ROOTSTOCK_TESTNET || 'https://public-node.testnet.rsk.co',
-        accounts,
-    }
-}
-```
-### 5. Deploying contracts
-
-After adding your MNEMONIC or PRIVATE_KEY to your dotenv file and adding networks in your hardhat.config.ts, run the following command to deploy your LayerZero contracts:
-
+Install dependencies once:
 
 ```bash
-npx hardhat lz:deploy
+npm install
 ```
 
-You will be prompted to select which chains to deploy to, if you wish to deploy to all blockchain networks selected, simply hit enter to continue deployment.
+Add a `.env` file (the project reads it automatically):
 
-
-```typescript
-info:    Compiling your hardhat project
-Nothing to compile
-✔ Which networks would you like to deploy? › rootstock-testnet, sepolia-testnet
-✔ Which deploy script tags would you like to use? … 
-info:    Will deploy 2 networks: rootstock-testnet, sepolia-testnet
-warn:    Will use all deployment scripts
-✔ Do you want to continue? … yes
-Network: sepolia-testnet
-Deployer: 0xD742C64Ab7ba8d31cee0594b4dc61b1ed8321246
-Network: rootstock-testnet
-Deployer: 0xD742C64Ab7ba8d31cee0594b4dc61b1ed8321246
-Deployed contract: MyOFT, network: sepolia-testnet, address: 0x185f688cf370cB810D7Be1FEa9e934d2863eeC09
-Deployed contract: MyOFT, network: rootstock-testnet, address: 0xFB6D255Cc45855A135A02DBED84743ac2009A3c0
-info:    ✓ Your contracts are now deployed
+```ini
+RPC_URL_ROOTSTOCK_TESTNET=https://...
+RPC_URL_SEPOLIA=https://...
+PRIVATE_KEY=0xyourdeployerkey
 ```
 
-### 6. Configuring layerzero OApp
+---
 
-To configure your OApp, you will need to change your layerzero.config.ts for your desired pathways. In this example, we will be using the `MyOFT` contract for our OFT. 
+## Deployment walkthrough
 
-
-You can initialize your OApp configurations by running:
+### 1. Deploy the OFT on both chains
 
 ```bash
-npx hardhat lz:oapp:config:init --contract-name MyOFT --oapp-config layerzero.config.ts
+# Rootstock testnet
+npx hardhat deploy --network rootstock-testnet --tags MyOFT
+
+# Sepolia testnet
+npx hardhat deploy --network sepolia-testnet --tags MyOFT
 ```
 
-Once this command is executed, you will be prompted to select the chain you setup in your layerzero.config.ts file. 
+Both runs will print the deployed address. In our example the OFT lives at `0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11` on each network.
 
-```typescript 
-✔ Select the networks to include in your OApp config › rootstock-testnet, sepolia-testnet
-```
-
-Then go to your layerzero.config.ts file and format it using cmd + shift + p and select `Format Document`.
-
-Each pathway contains a config, containing multiple configuration structs for changing how your OApp sends and receives messages, specifically for the chain your OApp is sending from:
-
-| Name | Type | Description |
-|:-----|:-----|:------------|
-| `sendLibrary` | Address | The message library used for configuring all sent messages `from` this chain. (e.g., `SendUln302.sol`) |
-| `receiveLibraryConfig` | Struct | A struct containing the receive message library address (e.g., `ReceiveUln302.sol`), and an optional BigInt, `gracePeriod`, the time to wait before updating to a new MessageLib version during version migration. Controls how the `from` chain receives messages. |
-| `receiveLibraryTimeoutConfig` | Struct | An optional param, defining when the old receive library (`lib`) will expire (`expiry`) during version migration. |
-| `sendConfig` | Struct | Controls how the OApp sends `from` this pathway, containing two more structs: `executorConfig` and `ulnConfig` (DVNs). |
-| `receiveConfig` | Struct | Controls how the OApp (`from`) receives messages, specifically the `ulnConfig` (DVNs). |
-| `enforcedOptions` | Struct | Controls the minimum destination gas sent to the destination, per message type (e.g., `_lzReceive`, `lzCompose`, etc.) in your OApp. |
-
-[Deployed Contracts](https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts)
-
-[DVN Addresses](https://docs.layerzero.network/v2/developers/evm/technical-reference/dvn-addresses)
-
-### 7. Wiring the OApp
+### 2. Deploy the YieldFarm contract on Sepolia
 
 ```bash
-npx hardhat lz:oapp:wire --oapp-config layerzero.config.ts
+npx hardhat deploy --network sepolia-testnet --tags YieldFarmOFT
 ```
 
-This command sets up the necessary connections between your deployed contracts on different chains.
+Keep the resulting address (e.g. `0x55f60c7790D9BEE3c6b59D4573ff099FCf1EBb7b`).
 
+### 3. Register a staking pool
 
-### 8. Verify Contracts
-
-You can verify your contracts by running the following command:
+Inside a Hardhat console (Sepolia) call `addPool` once. We use pool ID `0` for the lifecycle tasks.
 
 ```bash
-npx hardhat verify --network <network> <contract-address> <constructor-arguments>
+npx hardhat console --network sepolia-testnet
+>
+const farm = await ethers.getContractAt(
+  "YieldFarmOFT",
+  "0x55f60c7790D9BEE3c6b59D4573ff099FCf1EBb7b"
+);
+await farm.addPool(
+  "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11", // staking token
+  ethers.utils.parseUnits("0.1", 18)             // reward rate per second (adjust as needed)
+);
 ```
 
-For example, to verify the `MyOFT` contract on Rootstock Testnet, you would run:
+### 4. Deploy the VaultLifecycleManager on Sepolia
+
+Use the OFT address as the staking token and the farm address from step 2.
 
 ```bash
-
-npx hardhat verify --network rootstock-testnet <contract-address> "MyOFT" "MOFT" <endpoint-address> <owner-address>
+npx hardhat console --network sepolia-testnet
+>
+const Manager = await ethers.getContractFactory("VaultLifecycleManager");
+const mgr = await Manager.deploy(
+  "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11", // staking token (MyOFT)
+  "0x55f60c7790D9BEE3c6b59D4573ff099FCf1EBb7b"  // YieldFarmOFT
+);
+await mgr.deployed();
+console.log(mgr.address);
 ```
 
+Example manager address: `0x7185d2b631d09A4085b78dB178c4a47EdF8AA941`.
 
-> **Note:** Replace `<endpoint-address>` with the LayerZero endpoint address for the respective network and `<owner-address>` with your deployer address.
+---
 
-You can monitor your cross-chain transactions using:
+## Workflow: bridge → farm → return
 
-- [LayerZero Scan](https://layerzeroscan.com/) - Official LayerZero explorer
-- [Rootstock Explorer](https://explorer.testnet.rsk.co/) - For Rootstock testnet transactions
-- [Sepolia Etherscan](https://sepolia.etherscan.io/) - For Ethereum Sepolia transactions
+### Step A – Mint or top up tokens
 
-
-## OFT Minting Task
-
-To mint OFT tokens on a specific network, you can use the following command:
-
-```shell
+```bash
 npx hardhat lz:oft:mint \
-  --contract <OFT_CONTRACT_ADDRESS> \
-  --network <NETWORK_NAME> \
-  --amount <AMOUNT_TO_MINT> \
-  --private-key <YOUR_PRIVATE_KEY>
-```
-
-**Important Security Note**: Never share your private key or commit it to source control. Use environment variables or secure key management solutions instead.
-
-For safer usage, store your private key in an environment variable:
-
-```shell
-# First set the environment variable
-export PRIVATE_KEY=your_private_key_here
-
-# Then use it in the command
-npx hardhat lz:oft:mint \
-  --contract 0xYourContractAddress \
   --network rootstock-testnet \
+  --contract 0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11 \
   --amount 10 \
   --private-key $PRIVATE_KEY
 ```
 
-## Cross-chain Transfer Task
+### Step B – Bridge from Rootstock to Sepolia
 
-The `lz:oft:send` task now configures the trusted remote peer automatically before attempting a transfer. Provide the destination contract explicitly with `--remote` if it differs from the deployment artifacts on disk:
-
-```shell
+```bash
 npx hardhat lz:oft:send \
-  --contract <SOURCE_CONTRACT_ADDRESS> \
-  --recipient <RECIPIENT_ADDRESS> \
+  --contract 0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11 \
+  --recipient 0xE13d3527C631F3409aE91b838B56cFF0477420C7 \
   --source rootstock-testnet \
   --destination sepolia-testnet \
-  --amount 1 \
-  --privatekey $PRIVATE_KEY \
-  --remote <DESTINATION_CONTRACT_ADDRESS>
+  --amount 5 \
+  --privatekey $PRIVATE_KEY
 ```
 
-If `deployments/<destination>/MyOFT.json` exists the task will reuse that address, so the `--remote` flag is optional in that case.
+The script automatically sets the trusted peer on the destination chain and prints the transaction hash. Save that hash – we use it as the lifecycle identifier.
 
-If no recipient is specified, tokens will be minted to the address associated with the provided private key.
+### Step C – Approve the manager (once per wallet)
 
-Note: This task requires using a contract with a mint function (e.g., `MyOFTMock`). The standard `MyOFT` contract doesn't have this function.
+If you haven’t approved the manager yet:
 
-## Cross-Chain Token Transfer
+```bash
+npx hardhat console --network sepolia-testnet
+>
+const oft = await ethers.getContractAt("MyOFT", "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11");
+await oft.approve(
+  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941", // manager
+  ethers.utils.parseEther("1000")                // generous allowance
+);
+```
 
-After minting tokens, you can send them between networks using the LayerZero protocol. The `lz:oft:send` task allows you to transfer tokens from one chain to another seamlessly.
+### Step D – Stake bridged tokens
 
-### Farming Bridged Liquidity
+Use the bridge transaction hash from step B (example shown below).
 
-Once assets arrive on the destination chain, manage their lifecycle with the new helper tasks:
-
-```shell
-# Stake bridged assets into the configured yield farm
+```bash
 npx hardhat lz:vault:farm \
   --network sepolia-testnet \
-  --manager 0xLifecycleManager \
-  --bridge <bridge_tx_hash_or_label> \
+  --manager 0x7185d2b631d09A4085b78dB178c4a47EdF8AA941 \
+  --bridge 0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65 \
   --poolid 0 \
   --amount 5 \
   --autocompound true \
   --privatekey $PRIVATE_KEY
+```
 
-# Exit the position and bridge funds + rewards back home
+The manager transfers the tokens into the farm and records the position.
+
+### Step E – Inspect the position (optional)
+
+```bash
+npx hardhat console --network sepolia-testnet
+>
+const manager = await ethers.getContractAt(
+  "VaultLifecycleManager",
+  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941"
+);
+await manager.getPosition(
+  "0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65"
+);
+```
+
+### Step F – Harvest and bridge back when ready
+
+```bash
 npx hardhat lz:vault:return \
   --network sepolia-testnet \
-  --manager 0xLifecycleManager \
-  --bridge <bridge_tx_hash_or_label> \
+  --manager 0x7185d2b631d09A4085b78dB178c4a47EdF8AA941 \
+  --bridge 0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65 \
   --percent 100 \
-  --oft 0xYourOFTAddress \
+  --oft 0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11 \
   --destination rootstock-testnet \
   --privatekey $PRIVATE_KEY
 ```
 
-Use the bridge transaction hash (or any unique label) as the `--bridge` identifier to tie together the bridge, farm, and return steps.
+`lz:vault:return` harvests rewards, withdraws your principal, and calls the OFT send task so the result lands back on Rootstock. You can lower `--percent` to only withdraw part of the position.
 
-### Sending Tokens from Source to Destination Chain
-
-```shell
-npx hardhat lz:oft:send \
-  --contract <SOURCE_CHAIN_CONTRACT_ADDRESS> \
-  --recipient <RECIPIENT_ADDRESS> \
-  --source <SOURCE_NETWORK> \
-  --destination <DESTINATION_NETWORK> \
-  --amount <AMOUNT_TO_SEND> \
-  --privatekey <YOUR_PRIVATE_KEY>
-```
-
-For example, to send tokens from Sepolia to Rootstock:
-
-```shell
-npx hardhat lz:oft:send \
-  --contract 0xa574d50d1a0244625D46eB0209E819e8AbBc4ee2 \
-  --recipient 0xYourAddress \
-  --source sepolia-testnet \
-  --destination rootstock-testnet \
-  --amount 1 \
-  --privatekey $PRIVATE_KEY
-```
-
-Or to send tokens from Rootstock to Sepolia:
-
-```shell
-npx hardhat lz:oft:send \
-  --contract 0x2F00bB23390cC48b4ce3DeD692792c0320406ED1 \
-  --recipient 0xYourAddress \
-  --source rootstock-testnet \
-  --destination sepolia-testnet \
-  --amount 1 \
-  --privatekey $PRIVATE_KEY
-```
-
-**Note**: Make sure you have:
-1. Minted tokens on the source network
-2. Sufficient native tokens (ETH on Sepolia, RBTC on Rootstock) to pay for gas fees and LayerZero fees
-3. The correct contract addresses for each network
-
-The transaction can take a few minutes to be confirmed on both chains, as it needs to be processed by LayerZero's infrastructure. You can track the status of your cross-chain transaction using [LayerZero Scan](https://layerzeroscan.com/).
+---
 
 ## Troubleshooting
 
-If you encounter issues:
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `ERC20InsufficientBalance` revert | The Sepolia wallet doesn’t hold enough OFT to stake. | Bridge or mint more before running `lz:vault:farm`, or reduce `--amount`. |
+| `Pool does not exist` revert | `YieldFarmOFT.addPool` was never called. | Run the console snippet in step 3. |
+| `cannot estimate gas; ENS name` | You passed placeholders like `<stakingToken>` into `deploy`. | Replace them with real addresses. |
+| Hardhat task fails with `ENOTFOUND eth-sepolia.g.alchemy.com` | RPC URL missing/incorrect. | Set `RPC_URL_SEPOLIA` (and Rootstock equivalent) in `.env`. |
+| Allowance errors | Manager has no allowance for the staking token. | Perform the approval step C. |
 
-- Ensure you have sufficient test tokens on both networks
-- Verify your RPC endpoints are working correctly
-- Check that your contracts are properly configured for cross-chain messaging
-- Examine transaction logs for specific error messages
+---
 
-## Resources
+## Development notes
 
-- [LayerZero Documentation](https://docs.layerzero.network/)
-- [OFT Standard Specification](https://docs.layerzero.network/contracts/oft)
-- [Rootstock Documentation](https://developers.rsk.co/)
+- Contracts compile with Solidity 0.8.22 and optimizer 200 runs.
+- Hardhat tasks live in `task/` (`sendOFT.ts`, `mintOFT.ts`, `vaultFarm.ts`, `vaultReturn.ts`, `vaultOperations.ts`).
+- Deploy scripts: `deploy/MyOFT.ts`, `deploy/YieldFarmOFT.ts`, `deploy/MyOFT.ts` (Rootstock/Sepolia), `deploy/VaultLifecycleManager.ts` (if you add one for automation).
+- Tests in `test/hardhat/MyOFT.test.ts` use ethers v5 helpers (`ethers.utils`), so run `npx hardhat test` after `npm install`.
+
+---
+
+## Command reference
+
+| Purpose | Command |
+| --- | --- |
+| Compile everything | `npx hardhat compile` |
+| Type-check tasks/tests | `npx tsc --noEmit` |
+| Deploy MyOFT | `npx hardhat deploy --network <chain> --tags MyOFT` |
+| Deploy YieldFarmOFT (Sepolia) | `npx hardhat deploy --network sepolia-testnet --tags YieldFarmOFT` |
+| Mint tokens | `npx hardhat lz:oft:mint ...` |
+| Bridge tokens | `npx hardhat lz:oft:send ...` |
+| Stake bridged tokens | `npx hardhat lz:vault:farm ...` |
+| Exit / bridge back | `npx hardhat lz:vault:return ...` |
+| Inspect positions | `npx hardhat console --network sepolia-testnet` → `manager.getPosition(...)` |
+
+---
+
+## Acknowledgements
+
+- LayerZero team for the OFT/OApp contracts and devtools
+- OpenZeppelin for the ERC‑20 implementation and SafeERC20 helpers
+- Hardhat community for the deployment tooling we rely on
+
+If you hit an issue that isn’t covered above, please open it in the repository or reach out on the LayerZero forums. Happy bridging!
