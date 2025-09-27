@@ -1,4 +1,6 @@
+import { ethers } from "ethers";
 import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface TaskArgs {
@@ -20,13 +22,9 @@ task("lz:stake", "Stake tokens in a yield farming pool")
     console.log(`Staking ${amount} tokens in pool ${poolId} on ${network}`);
     console.log(`Contract address: ${contract}`);
 
-    let signer;
-    if (privatekey) {
-      signer = new hre.ethers.Wallet(privatekey, hre.ethers.provider);
-    } else {
-      const accounts = await hre.ethers.getSigners();
-      signer = accounts[0];
-    }
+    const signer = privatekey
+      ? new ethers.Wallet(privatekey, hre.ethers.provider)
+      : (await hre.ethers.getSigners())[0];
 
     console.log(`Using account: ${signer.address}`);
 
@@ -40,15 +38,15 @@ task("lz:stake", "Stake tokens in a yield farming pool")
     try {
       // Check user's balance
       const balance = await yieldFarmOFT.balanceOf(signer.address);
-      const amountInWei = hre.ethers.utils.parseEther(amount);
+      const amountInWei = ethers.utils.parseEther(amount);
 
       console.log(
-        `Current balance: ${hre.ethers.utils.formatEther(balance)} tokens`
+        `Current balance: ${ethers.utils.formatEther(balance)} tokens`
       );
 
       if (balance.lt(amountInWei)) {
         throw new Error(
-          `Insufficient balance. Need ${amount} tokens but have ${hre.ethers.utils.formatEther(balance)}`
+          `Insufficient balance. Need ${amount} tokens but have ${ethers.utils.formatEther(balance)}`
         );
       }
 
@@ -58,7 +56,7 @@ task("lz:stake", "Stake tokens in a yield farming pool")
       console.log(`- Staking token: ${poolInfo.stakingToken}`);
       console.log(`- Reward rate: ${poolInfo.rewardRate} tokens/second`);
       console.log(
-        `- Total staked: ${hre.ethers.utils.formatEther(poolInfo.totalStaked)} tokens`
+        `- Total staked: ${ethers.utils.formatEther(poolInfo.totalStaked)} tokens`
       );
       console.log(`- Active: ${poolInfo.active}`);
 
@@ -95,10 +93,10 @@ task("lz:stake", "Stake tokens in a yield farming pool")
       const userInfo = await yieldFarmOFT.getUserInfo(poolId, signer.address);
       console.log(`\nUpdated user info:`);
       console.log(
-        `- Staked amount: ${hre.ethers.utils.formatEther(userInfo.stakedAmount)} tokens`
+        `- Staked amount: ${ethers.utils.formatEther(userInfo.stakedAmount)} tokens`
       );
       console.log(
-        `- Pending rewards: ${hre.ethers.utils.formatEther(userInfo.pendingReward)} tokens`
+        `- Pending rewards: ${ethers.utils.formatEther(userInfo.pendingReward)} tokens`
       );
     } catch (error) {
       console.error("❌ Staking failed:", error);

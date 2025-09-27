@@ -6,6 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { OApp } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 import { Origin } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
+import { MessagingFee } from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 
 /**
  * @title RewardsDistributor
@@ -185,7 +186,8 @@ contract RewardsDistributor is OApp {
 
         // Prepare cross-chain message
         bytes memory payload = abi.encode(MSG_DISTRIBUTE_REWARDS, msg.sender, netAmount);
-        _lzSend(_dstEid, payload, _options, payable(msg.sender));
+        MessagingFee memory feeInfo = MessagingFee({ nativeFee: msg.value, lzTokenFee: 0 });
+        _lzSend(_dstEid, payload, _options, feeInfo, payable(msg.sender));
 
         totalCrossChainVolume += netAmount;
         emit RewardsClaimed(msg.sender, _poolId, claimableAmount);

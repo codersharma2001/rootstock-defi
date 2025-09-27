@@ -1,4 +1,6 @@
+import { ethers } from "ethers";
 import { task, types } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface TaskArgs {
@@ -37,22 +39,18 @@ task("lz:claim", "Claim rewards from a yield farming pool")
     }
     console.log(`Contract address: ${contract}`);
 
-    let signer;
-    if (privatekey) {
-      signer = new hre.ethers.Wallet(privatekey, hre.ethers.provider);
-    } else {
-      const accounts = await hre.ethers.getSigners();
-      signer = accounts[0];
-    }
+    const signer = privatekey
+      ? new ethers.Wallet(privatekey, hre.ethers.provider)
+      : (await hre.ethers.getSigners())[0];
 
     console.log(`Using account: ${signer.address}`);
 
     // Get contract instance
-    const yieldFarmOFT = await hre.ethers.getContractAt(
+    const yieldFarmOFT = (await hre.ethers.getContractAt(
       "YieldFarmOFT",
       contract,
       signer
-    );
+    )) as ethers.Contract;
 
     try {
       // Check pending rewards
@@ -61,7 +59,7 @@ task("lz:claim", "Claim rewards from a yield farming pool")
         signer.address
       );
       console.log(
-        `Pending rewards: ${hre.ethers.utils.formatEther(pendingRewards)} tokens`
+        `Pending rewards: ${ethers.utils.formatEther(pendingRewards)} tokens`
       );
 
       if (pendingRewards.eq(0)) {
@@ -75,7 +73,7 @@ task("lz:claim", "Claim rewards from a yield farming pool")
         signer.address
       );
       console.log(
-        `Current staked amount: ${hre.ethers.utils.formatEther(userInfoBefore.stakedAmount)} tokens`
+        `Current staked amount: ${ethers.utils.formatEther(userInfoBefore.stakedAmount)} tokens`
       );
 
       if (crosschain && destination) {
@@ -100,24 +98,25 @@ task("lz:claim", "Claim rewards from a yield farming pool")
         // Estimate gas for the cross-chain operation
         let gasEstimate;
         try {
-          gasEstimate = await yieldFarmOFT.estimateGas.claimAndSendCrossChain(
+          gasEstimate = await yieldFarmOFT.estimateGas["claimAndSendCrossChain"](
             poolId,
             dstEid,
             options,
-            { value: hre.ethers.utils.parseEther("0.01") } // Estimate with 0.01 ETH
+            { value: ethers.utils.parseEther("0.01") } // Estimate with 0.01 ETH
           );
         } catch (error) {
           console.log("Using default gas estimate due to estimation error");
-          gasEstimate = hre.ethers.BigNumber.from("500000");
+          gasEstimate = ethers.BigNumber.from("500000");
         }
+        const gasLimit = gasEstimate.mul(120).div(100);
 
-        const claimTx = await yieldFarmOFT.claimAndSendCrossChain(
+        const claimTx = await yieldFarmOFT["claimAndSendCrossChain"](
           poolId,
           dstEid,
           options,
           {
-            value: hre.ethers.utils.parseEther("0.01"), // 0.01 ETH for LayerZero fees
-            gasLimit: gasEstimate.mul(120).div(100), // Add 20% buffer
+            value: ethers.utils.parseEther("0.01"), // 0.01 ETH for LayerZero fees
+            gasLimit,
           }
         );
 
@@ -140,7 +139,7 @@ task("lz:claim", "Claim rewards from a yield farming pool")
         // Check new token balance
         const newBalance = await yieldFarmOFT.balanceOf(signer.address);
         console.log(
-          `New token balance: ${hre.ethers.utils.formatEther(newBalance)} tokens`
+          `New token balance: ${ethers.utils.formatEther(newBalance)} tokens`
         );
       }
 
@@ -151,10 +150,10 @@ task("lz:claim", "Claim rewards from a yield farming pool")
       );
       console.log(`\nUpdated user info:`);
       console.log(
-        `- Staked amount: ${hre.ethers.utils.formatEther(userInfoAfter.stakedAmount)} tokens`
+        `- Staked amount: ${ethers.utils.formatEther(userInfoAfter.stakedAmount)} tokens`
       );
       console.log(
-        `- Pending rewards: ${hre.ethers.utils.formatEther(userInfoAfter.pendingReward)} tokens`
+        `- Pending rewards: ${ethers.utils.formatEther(userInfoAfter.pendingReward)} tokens`
       );
     } catch (error) {
       console.error("❌ Claiming failed:", error);

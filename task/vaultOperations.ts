@@ -1,4 +1,6 @@
+import { ethers } from "ethers";
 import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface DepositArgs {
@@ -36,13 +38,9 @@ task("lz:vault:deposit", "Deposit tokens into a cross-chain vault")
     );
     console.log(`Contract address: ${contract}`);
 
-    let signer;
-    if (privatekey) {
-      signer = new hre.ethers.Wallet(privatekey, hre.ethers.provider);
-    } else {
-      const accounts = await hre.ethers.getSigners();
-      signer = accounts[0];
-    }
+    const signer = privatekey
+      ? new ethers.Wallet(privatekey, hre.ethers.provider)
+      : (await hre.ethers.getSigners())[0];
 
     console.log(`Using account: ${signer.address}`);
 
@@ -57,10 +55,10 @@ task("lz:vault:deposit", "Deposit tokens into a cross-chain vault")
       const vaultInfo = await vault.vaults(vaultId);
       console.log(`Vault asset: ${vaultInfo.asset}`);
       console.log(
-        `Current total deposits: ${hre.ethers.utils.formatEther(vaultInfo.totalDeposits)} tokens`
+        `Current total deposits: ${ethers.utils.formatEther(vaultInfo.totalDeposits)} tokens`
       );
 
-      const amountInWei = hre.ethers.utils.parseEther(amount);
+      const amountInWei = ethers.utils.parseEther(amount);
 
       // Check balance and approval
       const assetToken = await hre.ethers.getContractAt(
@@ -72,7 +70,7 @@ task("lz:vault:deposit", "Deposit tokens into a cross-chain vault")
 
       if (balance.lt(amountInWei)) {
         throw new Error(
-          `Insufficient balance. Need ${amount} but have ${hre.ethers.utils.formatEther(balance)}`
+          `Insufficient balance. Need ${amount} but have ${ethers.utils.formatEther(balance)}`
         );
       }
 
@@ -96,12 +94,12 @@ task("lz:vault:deposit", "Deposit tokens into a cross-chain vault")
       // Get updated info
       const userInfo = await vault.getUserVaultInfo(vaultId, signer.address);
       console.log(`\nUser vault info:`);
-      console.log(`- Shares: ${hre.ethers.utils.formatEther(userInfo.shares)}`);
+      console.log(`- Shares: ${ethers.utils.formatEther(userInfo.shares)}`);
       console.log(
-        `- Deposit value: ${hre.ethers.utils.formatEther(userInfo.depositValue)} tokens`
+        `- Deposit value: ${ethers.utils.formatEther(userInfo.depositValue)} tokens`
       );
       console.log(
-        `- Pending yield: ${hre.ethers.utils.formatEther(userInfo.pendingYield)} tokens`
+        `- Pending yield: ${ethers.utils.formatEther(userInfo.pendingYield)} tokens`
       );
     } catch (error) {
       console.error("❌ Deposit failed:", error);
@@ -124,13 +122,9 @@ task("lz:vault:withdraw", "Withdraw tokens from a cross-chain vault")
     );
     console.log(`Contract address: ${contract}`);
 
-    let signer;
-    if (privatekey) {
-      signer = new hre.ethers.Wallet(privatekey, hre.ethers.provider);
-    } else {
-      const accounts = await hre.ethers.getSigners();
-      signer = accounts[0];
-    }
+    const signer = privatekey
+      ? new ethers.Wallet(privatekey, hre.ethers.provider)
+      : (await hre.ethers.getSigners())[0];
 
     console.log(`Using account: ${signer.address}`);
 
@@ -141,7 +135,7 @@ task("lz:vault:withdraw", "Withdraw tokens from a cross-chain vault")
     );
 
     try {
-      const sharesInWei = hre.ethers.utils.parseEther(shares);
+      const sharesInWei = ethers.utils.parseEther(shares);
 
       // Get user info before withdrawal
       const userInfoBefore = await vault.getUserVaultInfo(
@@ -149,12 +143,12 @@ task("lz:vault:withdraw", "Withdraw tokens from a cross-chain vault")
         signer.address
       );
       console.log(
-        `Current shares: ${hre.ethers.utils.formatEther(userInfoBefore.shares)}`
+        `Current shares: ${ethers.utils.formatEther(userInfoBefore.shares)}`
       );
 
       if (userInfoBefore.shares.lt(sharesInWei)) {
         throw new Error(
-          `Insufficient shares. Have ${hre.ethers.utils.formatEther(userInfoBefore.shares)} but trying to withdraw ${shares}`
+          `Insufficient shares. Have ${ethers.utils.formatEther(userInfoBefore.shares)} but trying to withdraw ${shares}`
         );
       }
 
@@ -173,10 +167,10 @@ task("lz:vault:withdraw", "Withdraw tokens from a cross-chain vault")
       );
       console.log(`\nUpdated user vault info:`);
       console.log(
-        `- Shares: ${hre.ethers.utils.formatEther(userInfoAfter.shares)}`
+        `- Shares: ${ethers.utils.formatEther(userInfoAfter.shares)}`
       );
       console.log(
-        `- Deposit value: ${hre.ethers.utils.formatEther(userInfoAfter.depositValue)} tokens`
+        `- Deposit value: ${ethers.utils.formatEther(userInfoAfter.depositValue)} tokens`
       );
     } catch (error) {
       console.error("❌ Withdrawal failed:", error);
@@ -205,10 +199,10 @@ task("lz:vault:info", "Get vault information")
         console.log(`\nVault ${vaultId} Info:`);
         console.log(`- Asset token: ${vaultInfo.asset}`);
         console.log(
-          `- Total deposits: ${hre.ethers.utils.formatEther(vaultInfo.totalDeposits)} tokens`
+          `- Total deposits: ${ethers.utils.formatEther(vaultInfo.totalDeposits)} tokens`
         );
         console.log(
-          `- Total shares: ${hre.ethers.utils.formatEther(vaultInfo.totalShares)}`
+          `- Total shares: ${ethers.utils.formatEther(vaultInfo.totalShares)}`
         );
         console.log(
           `- Yield rate: ${vaultInfo.yieldRate} basis points (${vaultInfo.yieldRate / 100}%)`
@@ -221,10 +215,10 @@ task("lz:vault:info", "Get vault information")
         // Calculate share price
         if (vaultInfo.totalShares.gt(0)) {
           const sharePrice = vaultInfo.totalDeposits
-            .mul(hre.ethers.utils.parseEther("1"))
+            .mul(ethers.utils.parseEther("1"))
             .div(vaultInfo.totalShares);
           console.log(
-            `- Share price: ${hre.ethers.utils.formatEther(sharePrice)} tokens per share`
+            `- Share price: ${ethers.utils.formatEther(sharePrice)} tokens per share`
           );
         }
 
@@ -233,13 +227,13 @@ task("lz:vault:info", "Get vault information")
           const userInfo = await vault.getUserVaultInfo(vaultId, user);
           console.log(`\nUser ${user} Info:`);
           console.log(
-            `- Shares: ${hre.ethers.utils.formatEther(userInfo.shares)}`
+            `- Shares: ${ethers.utils.formatEther(userInfo.shares)}`
           );
           console.log(
-            `- Deposit value: ${hre.ethers.utils.formatEther(userInfo.depositValue)} tokens`
+            `- Deposit value: ${ethers.utils.formatEther(userInfo.depositValue)} tokens`
           );
           console.log(
-            `- Pending yield: ${hre.ethers.utils.formatEther(userInfo.pendingYield)} tokens`
+            `- Pending yield: ${ethers.utils.formatEther(userInfo.pendingYield)} tokens`
           );
         }
       } catch (error) {
@@ -263,13 +257,9 @@ task("lz:vault:claim-yield", "Claim yield from a vault")
 
     console.log(`Claiming yield from vault ${vaultId} on ${network}`);
 
-    let signer;
-    if (privatekey) {
-      signer = new hre.ethers.Wallet(privatekey, hre.ethers.provider);
-    } else {
-      const accounts = await hre.ethers.getSigners();
-      signer = accounts[0];
-    }
+    const signer = privatekey
+      ? new ethers.Wallet(privatekey, hre.ethers.provider)
+      : (await hre.ethers.getSigners())[0];
 
     const vault = await hre.ethers.getContractAt(
       "CrossChainVault",
@@ -284,7 +274,7 @@ task("lz:vault:claim-yield", "Claim yield from a vault")
         signer.address
       );
       console.log(
-        `Pending yield: ${hre.ethers.utils.formatEther(pendingYield)} tokens`
+        `Pending yield: ${ethers.utils.formatEther(pendingYield)} tokens`
       );
 
       if (pendingYield.eq(0)) {

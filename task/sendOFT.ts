@@ -84,11 +84,11 @@ task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
             const environmentFactory = createGetHreByEid();
             const providerFactory = createProviderFactory(environmentFactory);
             const provider = await providerFactory(eidA);
-            
+
             // Create wallet from private key
             const wallet = new ethers.Wallet(taskArgs.privatekey, provider);
             console.log(`Sender address: ${wallet.address}`);
-            
+
             // Create contract instance directly without using contract factory
             const oftContract = new ethers.Contract(contractAddress, OFT_ABI, wallet);
 
@@ -139,7 +139,7 @@ task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
             
             // Convert recipient address to bytes32
             const recipientAddressBytes32 = hexZeroPad(recipient, 32);
-            
+
             // Parameters for the send function
             const sendParam = [eidB, recipientAddressBytes32, amount, amount.mul(98).div(100), options, '0x', '0x'];
             
@@ -193,4 +193,3 @@ task('lz:oft:send', 'Send tokens cross-chain using LayerZero technology')
             return null;
         }
     });
-

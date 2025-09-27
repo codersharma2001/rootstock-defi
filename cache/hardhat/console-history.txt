@@ -1,0 +1,16 @@
+);  ethers.utils.parseUnits("0.1", 18)            // reward rate per second (adjust)  "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11", // staking token (MyOFT)await farm.addPool(
+);  "0x55f60c7790D9BEE3c6b59D4573ff099FCf1EBb7b" // YieldFarmOFT  "YieldFarmOFT",const farm = await ethers.getContractAt(
+await tx.wait();
+const tx = await token.approve("0x7185d2b631d09A4085b78dB178c4a47EdF8AA941", ethers.utils.parseEther("5"));
+const token = await ethers.getContractAt("MyOFT", "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11");
+(await oft.balanceOf("0xE13d3527C631F3409aE91b838B56cFF0477420C7")).toString();
+const oft = await ethers.getContractAt("MyOFT", "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11");
+await mgr.deployed();
+const mgr = await Manager.deploy(stakingToken, yieldFarm);
+const Manager = await ethers.getContractFactory("VaultLifecycleManager")
+const yieldFarm    = "0x55f60c7790D9BEE3c6b59D4573ff099FCf1EBb7b";
+const stakingToken = "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11";
+const mgr = await Manager.deploy("<stakingToken>", "<yieldFarmAddress>");
+const Manager = await ethers.getContractFactory("VaultLifecycleManager");
+const mgr = await Manager.deploy("<stakingToken>", "<yieldFarmAddress>");
+const Manager = await ethers.getContractFactory("VaultLifecycleManager");
