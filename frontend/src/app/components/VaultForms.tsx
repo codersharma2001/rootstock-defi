@@ -30,7 +30,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
           <span className="text-white font-bold">{userBalance} MyOFT</span>
         </div>
         <div className="text-xs text-gray-400 mt-1">
-          Don't have MyOFT? <button className="text-purple-400 underline">Buy/Mint Here</button>
+          Don&apos;t have MyOFT? <button className="text-purple-400 underline">Buy/Mint Here</button>
         </div>
       </div>
 
