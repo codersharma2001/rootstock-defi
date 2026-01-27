@@ -1,3 +1,16 @@
+);  "0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65"await manager.getPosition(
+await manager.getPosition(
+);  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941"  "VaultLifecycleManager",const manager = await ethers.getContractAt(
+);  "0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65"await manager.getPosition(
+);  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941"  "VaultLifecycleManager",const manager = await ethers.getContractAt(
+);  ethers.utils.parseEther("1000")                // generous allowance  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941", // managerawait oft.approve(
+const oft = await ethers.getContractAt("MyOFT", "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11");
+);  "0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65"await manager.getPosition(
+);  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941"  "VaultLifecycleManager",const manager = await ethers.getContractAt(
+);  "0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65"await manager.getPosition(
+);  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941"  "VaultLifecycleManager",const manager = await ethers.getContractAt(
+);  "0x976137480431e0d99d0c3980c40b1cfc72aece2f6139f05c9ce592d6eb4c1e65"await manager.getPosition(
+);  "0x7185d2b631d09A4085b78dB178c4a47EdF8AA941"  "VaultLifecycleManager",const manager = await ethers.getContractAt(
 );  ethers.utils.parseUnits("0.1", 18)            // reward rate per second (adjust)  "0xC5b58bC164DC5c935DC9cFa3cbc7525bc6f3bA11", // staking token (MyOFT)await farm.addPool(
 );  "0x55f60c7790D9BEE3c6b59D4573ff099FCf1EBb7b" // YieldFarmOFT  "YieldFarmOFT",const farm = await ethers.getContractAt(
 await tx.wait();
